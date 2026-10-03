@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پەیمانگە — تومارا نەهاتنێ</title>
+<link rel="stylesheet" href="css/portal.css">
+
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo-badge" id="brandBadge">🎓</div>
+  <div class="header-text">
+    <h1 id="hInstName">پەیمانگە</h1>
+    <p id="hSub">سیستەما تومارکرنا نەهاتنێ</p>
+    <p id="hYear" style="margin-top:2px;color:#667eea;font-weight:700;font-size:14px;"></p>
+  </div>
+
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('ku')">کوردی</button>
+    <button class="lang-btn" onclick="setLang('ar')">عربي</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+
+  <div class="header-user">
+    <div class="user-pill"><span class="dot"></span><span id="headerUserName"></span></div>
+    <button class="btn-logout" onclick="doLogout()" id="btnLogout">🚪 دەرچوون</button>
+  </div>
+</header>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p id="loadingText">بارکرن...</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<main>
+  <div class="form-wrap compact-portal" id="screenSubmit" style="display:none">
+
+    <section class="portal-status" aria-label="Teacher and date status">
+      <div class="portal-status-main">
+        <div class="status-avatar" id="welcomeAvatar">م</div>
+        <div class="status-copy">
+          <div class="status-title" id="welcomeName"></div>
+          <div class="status-sub" id="welcomeSub">تکایە زانیاریێن دەرسێ داخل بکە و قوتابیێن نەهاتی هلبژێرە</div>
+        </div>
+      </div>
+      <div class="status-meta">
+        <span class="status-date">📅 <span id="todayLabel">ئەمرۆ</span> <strong id="todayValue"></strong></span>
+        <span id="workingDayStatus" class="working-status"></span>
+      </div>
+    </section>
+
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-box">
+        <div class="confirm-icon">🗑️</div>
+        <h3 id="confirmTitle">تومارکرن بسڕەوە؟</h3>
+        <p id="confirmMsg">ئەم کارە نابێتە پووچەلکرن.</p>
+        <div class="confirm-btns">
+          <button class="btn-conf-cancel" id="confirmCancelBtn" onclick="closeConfirm()">هەڵوەستان</button>
+          <button class="btn-conf-delete" id="confirmDeleteBtn" onclick="executeDelete()">🗑️ بسڕەوە</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="card compact-card lesson-card">
+      <div class="compact-section-title">
+        <span class="section-icon">١</span>
+        <h3 id="step1">زانیارییێن دەرسێ</h3>
+      </div>
+      <div class="compact-card-body lesson-body">
+        <input type="hidden" id="fDate">
+        <div class="lesson-fields">
+          <div class="form-group">
+            <label><span id="labelClass">گروپا پۆلێ</span> <span class="req">*</span></label>
+            <select class="form-control" id="fClass" onchange="onClassChange()">
+              <option value="">— هلبژێرە —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><span id="labelSubject">بابەت</span> <span class="req">*</span></label>
+            <select class="form-control" id="fSubject" onchange="onSubjectChange()">
+              <option value="">— هلبژێرە —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label><span id="labelLecture">ژمارەیا دەرسێ</span> <span class="req">*</span></label>
+            <select class="form-control" id="fLecture" onchange="saveFormState()">
+              <option value="">— هلبژێرە —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card compact-card students-card">
+      <div class="compact-section-title students-title-row">
+        <div class="students-title-left">
+          <span class="section-icon">٢</span>
+          <h3 id="step2">قوتابیێن نەهاتی</h3>
+        </div>
+        <span class="students-count" id="absentCount">0 نەهاتی</span>
+      </div>
+
+      <div class="compact-card-body students-body">
+        <div class="students-area">
+          <div class="students-area-header">
+            <div class="students-heading">
+              <h4 id="studentsAreaTitle">📋 هلبژارنا پۆلێ</h4>
+              <div class="student-hint" id="studentsHint"></div>
+            </div>
+          </div>
+
+          <input type="text" class="form-control student-search" id="studentSearch"
+                 style="display:none" oninput="filterStudentRows(this.value)" autocomplete="off" />
+
+          <div id="studentsContainer">
+            <div class="no-students">
+              <span class="icon">🎓</span>
+              <span id="noStudentsText">پۆلێ هلبژێرە دا کو لیستا قوتابیان دەرکەڤە</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="absent-preview" id="absentPreview" aria-hidden="true">
+      <h5 id="absentPreviewTitle">✗ قوتابیێن نەهاتی:</h5>
+      <div class="absent-pills" id="absentPills"></div>
+    </div>
+
+    <div class="action-row compact-actions">
+      <button class="btn-secondary" onclick="resetForm()" id="btnReset">🔄 سفرکرن</button>
+      <button class="btn-submit" onclick="doSubmit()" id="btnSubmit">
+        <span id="btnSubmitText">✓ شاندن و پاشەکەفتکرن</span>
+      </button>
+    </div>
+
+    <div class="card recent-card compact-recent" id="recentCard" style="display:none">
+      <div class="compact-section-title recent-title-row">
+        <span class="section-icon">٣</span>
+        <h3 id="recentTitle">تومارکرنێن ئەمرۆ</h3>
+        <span class="recent-count-badge" id="recentCountBadge">0</span>
+      </div>
+      <div class="card-body recent-card-body" id="recentCardBody"></div>
+    </div>
+
+  </div>
+
+  <div class="success-wrap" id="screenSuccess" style="display:none">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <h2 id="successTitle">سەرکەفتن! تومار کرا</h2>
+      <p id="successSub">نەهاتنا قوتابیان ب سەرکەفتی هاتە تومارکرن.</p>
+      <div class="success-details" id="successDetails"></div>
+      <button class="btn-new" onclick="newSubmission()" id="btnNew">✓ باشە</button>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/common.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/portal.js"></script>
+</body>
+</html>
