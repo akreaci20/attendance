@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پەیمانگە — داشبۆرد</title>
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/dashboard-mgmt.css">
+</head>
+<body>
+<div style="max-width:1400px;margin:0 auto;">
+
+<!-- HEADER -->
+<div class="dash-header">
+  <div class="dash-header-controls">
+    <p id="lastUpdate"></p>
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('ku')">کوردی</button>
+      <button class="lang-btn" onclick="setLang('ar')">عربي</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+    <button class="btn-logout" onclick="doLogout()" id="btnLogout">🚪 دەرچوون</button>
+  </div>
+  <br>
+  <div class="dash-header-top">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='46' fill='%23e5e5ea'/%3E%3Cpath d='M24 62l24-30 24 30z' fill='%23c7c7cc'/%3E%3C/svg%3E" alt="ACI Logo" class="logo-right" id="dashInstituteLogo">
+    <div class="dash-titles" dir="rtl" style="font-family:'Vazirmatn','Noto Sans Arabic',sans-serif;text-align:center;">
+      <h1 id="dInstName" style="margin-bottom:5px;font-size:36px;">پەیمانگە</h1>
+      <h2 id="dSub" style="margin-top:0;color:#555;font-size:24px;">تومارا نەهاتنا قوتابیان</h2>
+      <p id="dAcademicYear" style="margin-top:2px;color:#667eea;font-weight:700;font-size:15px;"></p>
+    </div>
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='46' fill='%23e5e5ea'/%3E%3Cpath d='M24 62l24-30 24 30z' fill='%23c7c7cc'/%3E%3C/svg%3E" alt="New Left Logo" class="logo-left" id="dashMinistryLogo">
+  </div>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="🔍 ناڤێ یەکەم ی قوتابی بنووسە..." oninput="onSearch()">
+    <div id="dropdownResults"></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-grid">
+  <div class="stat-card stat-total"><h3 id="sTotalAbs">📚 کۆی نەهاتن</h3><div class="number" id="totalAbsences">-</div></div>
+  <div class="stat-card stat-total"><h3 id="sStudents">👥 قوتابیان</h3><div class="number" id="totalStudents">-</div></div>
+  <div class="stat-card stat-high"><h3 id="sHighRisk">🔴 مەترسیدار</h3><div class="number" id="highRisk">-</div><p id="sHighRiskSub">≥15 نەهاتن</p></div>
+  <div class="stat-card stat-medium"><h3 id="sAtRisk">🟠 فریادرەس</h3><div class="number" id="atRisk">-</div><p id="sAtRiskSub">8-14 نەهاتن</p></div>
+  <div class="stat-card stat-good"><h3 id="sClasses">🏫 پۆلان</h3><div class="number" id="totalClasses">-</div></div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('daily')"    id="tab-daily">📅 ڕۆژانە</button>
+  <button class="tab"        onclick="showTab('weekly')"   id="tab-weekly">📊 هەفتانە</button>
+  <button class="tab"        onclick="showTab('monthly')"  id="tab-monthly">📅 مانگانە</button>
+  <button class="tab"        onclick="showTab('roster')"   id="tab-roster">📋 لیست</button>
+  <button class="tab"        onclick="showTab('analytics')"id="tab-analytics">📈 شیکاری</button>
+  <button class="tab"        onclick="showTab('teachers')" id="tab-teachers">👨‍🏫 مامۆستایان</button>
+  <button class="tab"        onclick="showTab('students')" id="tab-students">👨‍🎓 قوتابیان</button>
+  <button class="tab"        onclick="showTab('subjects')" id="tab-subjects">🏫 پۆل و بابەت</button>
+  <button class="tab"        onclick="showTab('graduates')" id="tab-graduates">🎓 دەرچووان</button>
+  <button class="tab"        onclick="showTab('settings')" id="tab-settings">⚙️ ڕێکخستن</button>
+</div>
+
+<!-- DAILY -->
+<div id="daily" class="content-section active">
+  <h2 class="section-title" id="dDailyTitle">📅 ڕاپۆرتی ڕۆژانە</h2>
+  <p class="section-sub" id="dDailySub">کاتژمێر بە کاتژمێر نەهاتنی قوتابیان ببینە</p>
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="dDateLabel">📆 بەروار:</label>
+        <input type="date" id="dailyDate" onchange="filterDaily()">
+      </div>
+      <button class="btn" onclick="setToday()" id="btnToday">ئەمرۆ</button>
+      <button class="btn btn-gray" onclick="setPrevDay()" id="btnYesterday">دووێ</button>
+      <button class="btn btn-green" onclick="exportDailyPDF()" id="btnPrintD">🖨️ چاپکرن</button>
+    </div>
+  </div>
+  <div id="dailyContent"><div style="text-align:center;padding:50px;color:#667eea;font-size:1.1em;">⏳ بارکرن...</div></div>
+</div>
+
+<!-- WEEKLY -->
+<div id="weekly" class="content-section">
+  <h2 class="section-title" id="dWeeklyTitle">📊 ڕاپۆرتی هەفتانە</h2>
+  <p class="section-sub" id="dWeeklySub">کۆی نەهاتنی هەفتەیەک بینە</p>
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="dWeekLabel">📅 هەفتە:</label>
+        <select id="weekSelect" onchange="loadWeekly()"></select>
+      </div>
+      <button class="btn btn-green" onclick="exportWeeklyPDF()" id="btnPrintW">🖨️ چاپکرن</button>
+    </div>
+  </div>
+  <div id="weeklyContent"><div style="text-align:center;padding:50px;color:#999;">هەفتەیەک هەلبژێرە</div></div>
+</div>
+
+<!-- MONTHLY -->
+<div id="monthly" class="content-section">
+  <h2 class="section-title" id="dMonthlyTitle">📅 ڕاپۆرتی مانگانە</h2>
+  <p class="section-sub" id="dMonthlySub">کۆی نەهاتنی مانگێک بینە</p>
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="dMonthLabel">📆 مانگ:</label>
+        <select id="monthSelect" onchange="loadMonthly()"></select>
+      </div>
+      <button class="btn btn-green" onclick="exportMonthlyPDF()" id="btnPrintM">🖨️ چاپکرن</button>
+    </div>
+  </div>
+  <div id="monthlyContent"><div style="text-align:center;padding:50px;color:#999;">مانگێک هەلبژێرە</div></div>
+</div>
+
+<!-- ROSTER -->
+<div id="roster" class="content-section">
+  <h2 class="section-title" id="dRosterTitle">📋 لیستی پۆل</h2>
+  <p class="section-sub" id="dRosterSub">ناڤی قوتابی کلیک بکە پرۆفایلی ببینیت</p>
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="dClassLabel">🏫 پۆل:</label>
+        <select id="rosterClass" onchange="filterRoster()"></select>
+      </div>
+      <div class="filter-group">
+        <label id="dMinAbsLabel">🔢 کەمترین نەهاتن:</label>
+        <input type="number" id="minAbsences" value="0" min="0" onchange="filterRoster()">
+      </div>
+      <button class="btn btn-green" onclick="exportRosterPDF()" id="btnPrintR">🖨️ چاپکرن</button>
+    </div>
+  </div>
+  <div id="rosterContent"><div style="text-align:center;padding:50px;color:#999;">پۆلێک هەلبژێرە</div></div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="analytics" class="content-section">
+  <h2 class="section-title" id="dAnalyticsTitle">📈 شیکاری</h2>
+  <p class="section-sub" id="dAnalyticsSub">ئامارێن بەرفراوان ل سەر نەهاتنا قوتابیان</p>
+  <div class="filter-section">
+    <h3 style="color:#667eea;margin-bottom:12px;font-size:1.1em;" id="dPolicyTitle">ڕێکخستنا سیاسەتی دەرکرن</h3>
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="dLecPerDay">ژمارەی وانەیێن دابراون بۆ ١ ڕۆژ:</label>
+        <input type="number" id="lecturesPerDay" value="3" min="1" disabled>
+      </div>
+      <div class="filter-group">
+        <label id="dExpDays">ژمارەی ڕۆژانی دابراون بۆ دەرکرن:</label>
+        <input type="number" id="expulsionDays" value="21" min="1" disabled>
+      </div>
+    </div>
+    <p class="policy-disabled-note" id="policyDisabledNote">⚙️ ئەڤێن ژ ڕێکخستن ⚙️ Settings دەستکاری دبن</p>
+  </div>
+  <div id="analyticsContent"><div style="text-align:center;padding:50px;color:#667eea;font-size:1.1em;">⏳ بارکرن...</div></div>
+</div>
+
+<!-- TEACHERS TAB -->
+<div id="teachers" class="content-section">
+  <h2 class="section-title" id="dTeachersTitle">👨‍🏫 بەڕێوەبردنی مامۆستایان</h2>
+  <p class="section-sub" id="dTeachersSub">زیادکرن، دەسکاریکرن و بینینی هەموو مامۆستایان</p>
+  <div style="margin-bottom:16px;">
+    <button class="btn-add" onclick="openAddTeacher()" id="btnAddTeacher">➕ مامۆستایێ نوی</button>
+  </div>
+  <div class="table-wrap">
+    <table class="mgmt-table" id="teacherTable">
+      <thead><tr>
+        <th id="thTName">ناڤ</th>
+        <th id="thTUser">یوزەرناڤ</th>
+        <th id="thTPass">پاسۆرد</th>
+        <th id="thTClasses">پۆلان</th>
+        <th id="thTSubjects">بابەت</th>
+        <th id="thTAction"></th>
+      </tr></thead>
+      <tbody id="teacherTableBody">
+        <tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">⏳ بارکرن...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cache-bar">
+    <p id="cacheNote1">📡 دوای هەر گۆڕانێ داتا دەبێت نوێ بکرێتەوە</p>
+    <button class="btn-add" onclick="doClearCache()" id="btnClearCache1">🔄 نوێکرنەوەی داتا</button>
+  </div>
+</div>
+
+<!-- STUDENTS TAB -->
+<div id="students" class="content-section">
+  <h2 class="section-title" id="dStudentsTitle">👨‍🎓 بەڕێوەبردنی قوتابیان</h2>
+  <p class="section-sub" id="dStudentsSub">بینین، زیادکرن، گواستنەوە و سڕینەوەی قوتابیان</p>
+
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+    <!-- Left: class grid -->
+    <div style="flex:0 0 200px;min-width:160px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+        <strong style="color:#667eea;" id="classListTitle">🏫 پۆلان</strong>
+        <button class="btn-add" onclick="openNewClass()" id="btnNewClass" style="font-size:0.78em;padding:6px 12px;">➕ پۆلێ نوی</button>
+      </div>
+      <div id="classGrid" class="class-grid" style="grid-template-columns:1fr;"></div>
+    </div>
+    <!-- Right: student list -->
+    <div style="flex:1;min-width:260px;">
+      <div id="studentPanel"><div style="text-align:center;padding:40px;color:#999;" id="selectClassHint">← پۆلێک هەلبژێرە</div></div>
+    </div>
+  </div>
+
+  <div class="cache-bar">
+    <p id="cacheNote2">📡 دوای هەر گۆڕانێ داتا دەبێت نوێ بکرێتەوە</p>
+    <button class="btn-add" onclick="doClearCache()" id="btnClearCache2">🔄 نوێکرنەوەی داتا</button>
+  </div>
+</div>
+
+<!-- SUBJECTS TAB -->
+<div id="subjects" class="content-section">
+  <h2 class="section-title" id="dSubjectsTitle">🏫 بەڕێوەبردنی پۆل و بابەتان</h2>
+  <p class="section-sub" id="dSubjectsSub">پۆلی نوی زیادبکە و بابەتێن وی دیاربکە، یان یێن هەبوو دەسکاری بکە</p>
+  <div style="margin-bottom:16px;">
+    <button class="btn-add" onclick="openAddSubject()" id="btnAddSubject">➕ زیادکرنی پۆل/بابەت</button>
+  </div>
+  <div class="table-wrap">
+    <table class="mgmt-table" id="subjectTable">
+      <thead><tr>
+        <th id="thSClass">پۆل / قۆناغ</th>
+        <th id="thSSubjects">بابەتان</th>
+        <th id="thSAction"></th>
+      </tr></thead>
+      <tbody id="subjectTableBody">
+        <tr><td colspan="3" style="text-align:center;padding:30px;color:#999;">⏳ بارکرن...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="cache-bar">
+    <p id="cacheNote3">📡 دوای هەر گۆڕانێ داتا دەبێت نوێ بکرێتەوە</p>
+    <button class="btn-add" onclick="doClearCache()" id="btnClearCache3">🔄 نوێکرنەوەی داتا</button>
+  </div>
+</div>
+
+<!-- GRADUATES TAB -->
+<div id="graduates" class="content-section">
+  <h2 class="section-title" id="dGraduatesTitle">🎓 دەرچووان</h2>
+  <p class="section-sub" id="dGraduatesSub">لیستا قوتابیێن دەرچوویی، بەپێی ساڵێ</p>
+  <div class="filter-section">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label id="gradYearLabel">📆 ساڵ:</label>
+        <select id="gradYearFilter" onchange="renderGraduatesList()"></select>
+      </div>
+      <button class="btn btn-green" onclick="exportGraduatesPDF()" id="btnPrintGrad">🖨️ چاپکرن</button>
+    </div>
+  </div>
+  <div id="graduatesList"></div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div id="settings" class="content-section">
+  <h2 class="section-title" id="dSettingsTitle">⚙️ ڕێکخستنێن سیستەمێ</h2>
+  <p class="section-sub" id="dSettingsSub">سیاسەتا نەهاتنێ، ساڵا خوێندنی و ناسنامەیا پەیمانگەهێ</p>
+
+  <!-- 🎯 ABSENCE POLICY -->
+  <div class="settings-section">
+    <h3 id="stPolicyTitle">🎯 سیاسەتا نەهاتنێ</h3>
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="setLecPerDayLbl">ژمارەی وانەیێن دابراون بۆ ١ ڕۆژ:</label>
+        <input type="number" id="setLecturesPerDay" min="1">
+      </div>
+      <div class="mgmt-field">
+        <label id="setExpDaysLbl">ژمارەی ڕۆژانی دابراون بۆ دەرکرن:</label>
+        <input type="number" id="setExpulsionDays" min="1">
+      </div>
+      <div class="mgmt-field">
+        <label id="setAtRiskLbl">سنوورێ ئاگاداریێ:</label>
+        <input type="number" id="setAtRiskThreshold" min="1">
+      </div>
+      <div class="mgmt-field">
+        <label id="setHighRiskLbl">سنوورێ مەترسیێ:</label>
+        <input type="number" id="setHighRiskThreshold" min="1">
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn-add" onclick="savePolicySettings()" id="btnSavePolicy">تۆمارکرنا سیاسەتێ</button>
+    </div>
+  </div>
+
+  <!-- 📅 ACADEMIC YEAR -->
+  <div class="settings-section">
+    <h3 id="stAcademicTitle">📅 ساڵا خوێندنی</h3>
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="setSchoolStartLbl">دەستپێکا ساڵا خوێندنی:</label>
+        <input type="date" id="setSchoolYearStart">
+      </div>
+      <div class="mgmt-field">
+        <label>—</label>
+        <div class="settings-readonly" id="setAcademicYearDisplay"></div>
+      </div>
+    </div>
+    <div style="margin-top:16px;">
+      <button class="btn-add" onclick="saveAcademicYearSettings()" id="btnSaveAcademicYear">تۆمارکرنا ساڵا خوێندنی</button>
+    </div>
+  </div>
+<!-- 🏫 NUMBER OF STAGES -->
+  <div class="settings-section">
+    <h3 id="stStagesTitle">🏫 ژمارا قۆناغان</h3>
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="setStagesCountLbl">ژمارا قۆناغان (نموونە: 5)</label>
+        <input type="number" id="setStagesCount" min="1" max="12">
+      </div>
+    </div>
+    <p class="settings-note" id="stStagesNote"></p>
+    <div style="margin-top:16px;">
+      <button class="btn-add" onclick="saveStagesSettings()" id="btnSaveStages">تۆمارکرنا قۆناغان</button>
+    </div>
+  </div>
+
+<!-- 📅 WORKING DAYS -->
+<div class="settings-section">
+  <h3 id="workingDaysTitle">📅 Working Days</h3>
+
+  <div class="working-days-grid" id="workingDaysBox">
+
+    <label class="working-day-item" data-day="Sunday">
+      <input type="checkbox" value="Sunday">
+      <span class="working-day-name">Sunday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Monday">
+      <input type="checkbox" value="Monday">
+      <span class="working-day-name">Monday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Tuesday">
+      <input type="checkbox" value="Tuesday">
+      <span class="working-day-name">Tuesday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Wednesday">
+      <input type="checkbox" value="Wednesday">
+      <span class="working-day-name">Wednesday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Thursday">
+      <input type="checkbox" value="Thursday">
+      <span class="working-day-name">Thursday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Friday">
+      <input type="checkbox" value="Friday">
+      <span class="working-day-name">Friday</span>
+    </label>
+
+    <label class="working-day-item" data-day="Saturday">
+      <input type="checkbox" value="Saturday">
+      <span class="working-day-name">Saturday</span>
+    </label>
+
+  </div>
+
+  <p class="working-days-hint" id="workingDaysHint">
+    Select only the days when the institute operates.
+    Attendance submission is blocked on other days.
+  </p>
+
+  <div style="margin-top:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+
+    <button
+      class="btn-add"
+      onclick="saveWorkingDays()"
+      id="btnSaveWorkingDays">
+      💾 Save Working Days
+    </button>
+
+    <span
+      class="working-days-status"
+      id="workingDaysStatus">
+    </span>
+
+  </div>
+</div>
+  <!-- 🏫 INSTITUTE BRANDING -->
+  <div class="settings-section">
+    <h3 id="stBrandingTitle">🏫 ناسنامەیا پەیمانگەهێ</h3>
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="setNameKuLbl">ناڤێ پەیمانگەهێ (کوردی)</label>
+        <input type="text" id="setInstNameKu">
+      </div>
+      <div class="mgmt-field">
+        <label id="setNameArLbl">ناڤێ پەیمانگەهێ (عەرەبی)</label>
+        <input type="text" id="setInstNameAr">
+      </div>
+      <div class="mgmt-field">
+        <label id="setNameEnLbl">ناڤێ پەیمانگەهێ (ئینگلیزی)</label>
+        <input type="text" id="setInstNameEn">
+      </div>
+    </div>
+    <div style="margin-top:16px;margin-bottom:22px;">
+      <button class="btn-add" onclick="saveNamesSettings()" id="btnSaveNames">تۆمارکرنا ناڤان</button>
+    </div>
+
+    <div class="logo-widgets">
+      <div class="logo-widget">
+        <label class="lw-title" id="instituteLogoLbl">لۆگۆیێ پەیمانگەهێ</label>
+        <img id="instituteLogoPreview" class="logo-widget-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='46' fill='%23e5e5ea'/%3E%3Cpath d='M24 62l24-30 24 30z' fill='%23c7c7cc'/%3E%3C/svg%3E" alt="Institute Logo">
+        <input type="file" id="instituteLogoFile" accept="image/*">
+        <button class="btn-add" style="width:100%;" onclick="doUploadLogo('institute')" id="btnUploadInstituteLogo">⬆️ بارکرن</button>
+      </div>
+      <div class="logo-widget">
+        <label class="lw-title" id="ministryLogoLbl">لۆگۆیێ وەزارەتێ</label>
+        <img id="ministryLogoPreview" class="logo-widget-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='48' r='46' fill='%23e5e5ea'/%3E%3Cpath d='M24 62l24-30 24 30z' fill='%23c7c7cc'/%3E%3C/svg%3E" alt="Ministry Logo">
+        <input type="file" id="ministryLogoFile" accept="image/*">
+        <button class="btn-add" style="width:100%;" onclick="doUploadLogo('ministry')" id="btnUploadMinistryLogo">⬆️ بارکرن</button>
+      </div>
+    </div>
+    <p class="settings-note">🖼️ زێدەتر ژ 2MB نابیت، وێنە بەس (jpg, png, webp...)</p>
+  </div>
+
+  <div class="cache-bar">
+    <p id="cacheNote4">📡 دوای هەر گۆڕانێ داتا دەبێت نوێ بکرێتەوە</p>
+    <button class="btn-add" onclick="doClearCache()" id="btnClearCache4">🔄 نوێکرنەوەی داتا</button>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+
+<!-- STUDENT PROFILE MODAL -->
+<div class="modal" id="studentModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- ADMIN DELETE CONFIRM -->
+<div class="admin-confirm" id="adminConfirm">
+  <div class="admin-confirm-box">
+    <div class="icon">🗑️</div>
+    <h3 id="adminConfTitle">تومارکرن بسڕەوە؟</h3>
+    <div class="admin-confirm-info" id="adminConfInfo"></div>
+    <p id="adminConfWarning">ئەم کارە نابێتە پووچەلکرن.</p>
+    <div class="admin-confirm-btns">
+      <button class="btn-cancel-sm" onclick="closeAdminConfirm()" id="adminCancelBtn">هەڵوەستان</button>
+      <button class="btn-delete-sm" onclick="executeAdminDelete()" id="adminDeleteBtn">🗑️ بسڕەوە</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEACHER ADD/EDIT MODAL ── -->
+<div class="mgmt-modal-bg" id="teacherModal">
+  <div class="mgmt-modal">
+    <h3 id="teacherModalTitle">➕ مامۆستایێ نوی</h3>
+    <div class="mgmt-form">
+      <input type="hidden" id="tmEditUsername">
+      <div class="mgmt-field">
+        <label id="tmLblName">ناڤی مامۆستا</label>
+        <input type="text" id="tmName" placeholder="Ahmed Ali">
+      </div>
+      <div class="mgmt-field">
+        <label id="tmLblUser">یوزەرناڤ</label>
+        <input type="text" id="tmUsername" placeholder="ahmed" autocomplete="off">
+      </div>
+      <div class="mgmt-field">
+        <label id="tmLblPass">پاسۆرد</label>
+        <input type="text" id="tmPassword" placeholder="••••••" autocomplete="off">
+      </div>
+  <div class="mgmt-field">
+  <label id="tmLblClasses">🏫 پۆلان و بابەتان</label>
+  <div class="cb-group" id="tmClasses"></div>
+</div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeTeacherModal()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveTeacher()" id="btnSaveTeacher">تۆمارکرن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD STUDENT MODAL ── -->
+<div class="mgmt-modal-bg" id="addStudentModal">
+  <div class="mgmt-modal">
+    <h3 id="addStudentTitle">➕ قوتابی زیادبکە</h3>
+    <input type="hidden" id="addStudentClass">
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="addStudentLbl">ناڤی قوتابی</label>
+        <input type="text" id="addStudentName" placeholder="Ahmed Ali Hassan">
+      </div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeAddStudent()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveAddStudent()">زیادبکە</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BULK ADD STUDENTS MODAL ── -->
+<div class="mgmt-modal-bg" id="bulkStudentModal">
+  <div class="mgmt-modal">
+    <h3 id="bulkStudentTitle">➕ زیادکرنی چەند قوتابیێ</h3>
+    <input type="hidden" id="bulkStudentClass">
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="bulkStudentLbl">ناڤەکان بنووسە یان کۆپی بکە (هەر ناڤێ لە ستوری جیا)</label>
+        <textarea id="bulkStudentText" placeholder="Ahmed Ali&#10;Sara Hassan&#10;Ali Mohammed" oninput="previewBulk()"></textarea>
+        <span class="paste-hint" id="bulkHint">دەتوانی ڕێزیکان لە Excel یان Word کۆپی بکەی — بە خودی خو پاک دەبێتەوە</span>
+      </div>
+      <div id="bulkPreview" class="paste-preview"></div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeBulkStudent()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveBulkStudents()" id="btnSaveBulk">هەموویان زیادبکە</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MOVE STUDENT MODAL ── -->
+<div class="mgmt-modal-bg" id="moveStudentModal">
+  <div class="mgmt-modal">
+    <h3 id="moveStudentTitle">↔️ گواستنەوەی قوتابی</h3>
+    <input type="hidden" id="moveStudentName">
+    <input type="hidden" id="moveStudentFrom">
+    <p style="color:#667eea;font-weight:700;margin-bottom:14px;" id="moveStudentNameDisplay"></p>
+    <div class="mgmt-field">
+      <label id="moveToLbl">بۆ کام پۆل؟</label>
+      <div id="moveClassRadios" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;"></div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeMoveStudent()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveMoveStudent()">گواستنەوە</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NEW CLASS GROUP MODAL ── -->
+<div class="mgmt-modal-bg" id="newClassModal">
+  <div class="mgmt-modal">
+    <h3 id="newClassTitle">🏫 پۆلێ نوی دروستبکە</h3>
+
+    <div class="mgmt-form">
+
+      <div class="mgmt-field">
+        <label id="newClassStageLbl">Stage</label>
+        <select id="newClassStage" onchange="updateClassGroupPreview()"></select>
+      </div>
+
+      <div class="mgmt-field">
+        <label id="newClassGroupLbl">Group / Program</label>
+        <input
+          type="text"
+          id="newClassGroup"
+          placeholder="A, B, C, D, NAME,..."
+          oninput="updateClassGroupPreview()"
+          autocomplete="off">
+      </div>
+
+      <div class="mgmt-field">
+        <label id="newClassPreviewLbl">Class Group</label>
+        <div
+          id="newClassPreview"
+          style="font-size:2em;font-weight:800;color:#667eea;text-align:center;padding:12px 0;">
+          1
+        </div>
+      </div>
+
+    </div>
+
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeNewClass()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveNewClass()" id="btnSaveNewClass">
+        دروستکرن
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── RENAME CLASS MODAL ── -->
+<div class="mgmt-modal-bg" id="renameClassModal">
+  <div class="mgmt-modal">
+    <h3 id="renameClassTitle">✏️ ناڤێ پۆلی بگۆڕە</h3>
+    <input type="hidden" id="renameClassOld">
+    <div class="mgmt-form">
+      <div class="mgmt-field">
+        <label id="renameClassOldLbl">ناڤێ ئێستا</label>
+        <p id="renameClassOldDisplay" style="font-weight:700;color:#667eea;margin:0 0 6px;"></p>
+      </div>
+      <div class="mgmt-field">
+        <label id="renameClassNewLbl">ناڤێ نوی</label>
+        <input type="text" id="renameClassNew" placeholder="مثال: 3B">
+      </div>
+      <div class="mgmt-field">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;">
+          <input type="checkbox" id="renameClassHistory" style="width:auto;accent-color:#667eea;">
+          <span id="renameClassHistoryLbl">هەروەها تۆمارێن نەهاتنێ یێن پێشتر نوی بکە</span>
+        </label>
+      </div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeRenameClass()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveRenameClass()" id="btnSaveRenameClass">تۆمارکرن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROMOTE / GRADUATE MODAL ── -->
+<div class="mgmt-modal-bg" id="promoteModal">
+  <div class="mgmt-modal" style="max-width:520px;">
+    <h3 id="promoteTitle">🎓 بەرزکرن / دەرچوون</h3>
+    <input type="hidden" id="promoteSourceClass">
+    <div class="mgmt-form">
+      <div class="mgmt-field" id="promoteModeRow">
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button type="button" class="btn" id="promoteModeMoveBtn" style="flex:1;" onclick="setPromoteMode('move')"></button>
+          <button type="button" class="btn" id="promoteModeGradBtn" style="flex:1;" onclick="setPromoteMode('graduate')"></button>
+        </div>
+      </div>
+      <div class="mgmt-field" id="promoteDestField">
+        <label id="promoteDestLbl">بۆ کام پۆل؟</label>
+        <input type="text" id="promoteDestClass" placeholder="مثال: 2A" list="promoteDestOptions">
+        <datalist id="promoteDestOptions"></datalist>
+      </div>
+      <div class="mgmt-field" id="promoteYearField" style="display:none;">
+        <label id="promoteYearLbl">ساڵا دەرچوونێ</label>
+        <input type="text" id="promoteYear">
+      </div>
+      <div class="mgmt-field">
+        <label id="promoteStudentsLbl">قوتابیان هەلبژێرە (هەمی بەسەرکەوتی هاتینە هەلبژارتن)</label>
+        <div style="display:flex;gap:10px;margin:6px 0;">
+          <a href="#" onclick="togglePromoteAll(true);return false;" id="promoteCheckAll">هەمی هەلبژێرە</a>
+          <a href="#" onclick="togglePromoteAll(false);return false;" id="promoteCheckNone">هیچ هەلمەبژێرە</a>
+        </div>
+        <div id="promoteStudentList" style="max-height:280px;overflow-y:auto;border:1px solid #e9ecef;border-radius:8px;padding:8px;"></div>
+      </div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closePromoteModal()">هەڵوەستان</button>
+      <button class="btn-add" onclick="confirmPromote()" id="btnConfirmPromote">تۆمارکرن</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── DELETE CONFIRM MODAL ── -->
+<div class="mgmt-modal-bg" id="mgmtConfirmModal">
+  <div class="mgmt-modal" style="max-width:380px;text-align:center;">
+    <div style="font-size:2.5em;margin-bottom:12px;">🗑️</div>
+    <h3 id="mgmtConfirmTitle" style="color:#c8402a;">دڵنیایت؟</h3>
+    <p id="mgmtConfirmText" style="color:#666;margin-bottom:20px;font-size:0.9em;"></p>
+    <div class="mgmt-modal-btns" style="justify-content:center;">
+      <button class="btn-secondary" onclick="closeMgmtConfirm()">هەڵوەستان</button>
+      <button class="btn-danger" id="mgmtConfirmOk">بسڕەوە</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUBJECT ADD/EDIT MODAL ── -->
+<div class="mgmt-modal-bg" id="subjectModal">
+  <div class="mgmt-modal">
+    <h3 id="subjectModalTitle">➕ زیادکرنی پۆل/بابەت</h3>
+    <div class="mgmt-form">
+      <input type="hidden" id="smRowIndex">
+      <div class="mgmt-field">
+        <label id="smLblClass">پۆل / قۆناغ (مثال: 1 یان 4pro)</label>
+        <input type="text" id="smClassKey" placeholder="1">
+      </div>
+      <div class="mgmt-field">
+        <label id="smLblSubjects">بابەتان (پارچەکراو ب +)</label>
+        <textarea id="smSubjects" placeholder="Topic 1 + Topic 2 + Topic 3 + Topic 4" style="min-height:80px;"></textarea>
+      </div>
+    </div>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="closeSubjectModal()">هەڵوەستان</button>
+      <button class="btn-add" onclick="saveSubjectRow()" id="btnSaveSubject">تۆمارکرن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TEACHER LOGIN DETAILS (shown once after create / reset password) ── -->
+<div class="mgmt-modal-bg" id="credModal">
+  <div class="mgmt-modal" style="max-width:430px;">
+    <h3 id="credTitle">🔑</h3>
+    <p style="margin-bottom:8px;"><span id="credUserLbl"></span> <strong id="credUser" dir="ltr"></strong></p>
+    <p style="margin-bottom:12px;"><span id="credPassLbl"></span> <strong id="credPass" dir="ltr" style="font-family:monospace;font-size:1.35em;letter-spacing:1px;"></strong></p>
+    <p id="credNote" style="color:#d6362b;font-size:0.85em;line-height:1.5;"></p>
+    <div class="mgmt-modal-btns">
+      <button class="btn-secondary" onclick="copyCred()" id="btnCopyCred">Copy</button>
+      <button class="btn-add" onclick="closeCred()" id="btnCloseCred">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/common.js"></script>
+<script src="js/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/reports.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
