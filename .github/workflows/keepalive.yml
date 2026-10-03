@@ -1,36 +1,48 @@
-# Keeps a FREE Supabase project from being paused for inactivity.
-# Every 3 days it makes real requests to the database (it reads the public settings table).
-# Needs two repository secrets: SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY
-# (GitHub: Settings > Secrets and variables > Actions > New repository secret).
-name: Supabase keep-alive
+name: Supabase keep-alive (Multi-Project)
 
 on:
   schedule:
-    - cron: "17 6 */3 * *"     # 06:17 UTC on days 1, 4, 7, ... of each month
-  workflow_dispatch: {}          # also lets you run it by hand from the Actions tab
+    - cron: "17 6 */3 * *"      # Runs every 3 days
+  workflow_dispatch: {}
 
 jobs:
-  ping:
+  ping-all:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Call the database
+      - name: Ping All Supabase Projects
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          PROJECTS_JSON: ${{ secrets.SUPABASE_PROJECTS }}
         run: |
           set -eu
-          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_KEY:-}" ]; then
-            echo "Missing repository secrets SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY"; exit 1
+          if [ -z "${PROJECTS_JSON:-}" ]; then
+            echo "Missing secret: SUPABASE_PROJECTS"; exit 1
           fi
-          base="${SUPABASE_URL%/}"
-          for i in 1 2 3; do
-            code=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 30 \
-              -X POST "$base/rest/v1/rpc/get_public_settings" \
-              -H "apikey: $SUPABASE_KEY" -H "Authorization: Bearer $SUPABASE_KEY" \
-              -H "Content-Type: application/json" -d '{}')
-            echo "request $i -> HTTP $code"
-            if [ "$code" != "200" ]; then cat /tmp/out.json; echo; exit 1; fi
-            sleep 3
+
+          echo "$PROJECTS_JSON" | jq -c '.[]' | while read -r project; do
+            name=$(echo "$project" | jq -r '.name')
+            url=$(echo "$project" | jq -r '.url')
+            key=$(echo "$project" | jq -r '.key')
+
+            base="${url%/}"
+            echo "----------------------------------------"
+            echo "Pinging: $name ($base)"
+
+            for i in 1 2 3; do
+              code=$(curl -sS -o /tmp/out.json -w '%{http_code}' --max-time 30 \
+                -X POST "$base/rest/v1/rpc/get_public_settings" \
+                -H "apikey: $key" -H "Authorization: Bearer $key" \
+                -H "Content-Type: application/json" -d '{}')
+
+              echo "  [$name] request $i -> HTTP $code"
+              if [ "$code" != "200" ]; then
+                cat /tmp/out.json
+                echo ""
+                exit 1
+              fi
+              sleep 2
+            done
+            echo "  [$name] Responded OK."
           done
-          echo "Supabase responded OK."
+          echo "----------------------------------------"
+          echo "All Supabase projects pinged successfully."
